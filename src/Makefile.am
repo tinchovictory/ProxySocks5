@@ -1,15 +1,18 @@
-bin_PROGRAMS    = socksv5 hello_test request_test netutils_test
+bin_PROGRAMS    = socksv5 hello_test request_test netutils_test \
+                  selector_test
+
 socksv5_SOURCES = main.c \
                   hello.h hello.c \
 		  request.h request.c \
                   netutils.h netutils.c \
 		  buffer.h buffer.c \
+                  selector.h selector.c \
                   socks5.h socks5.c
 
 TESTS = hello_test request_test netutils_test \
-        buffer_test
+        buffer_test selector_test
 check_PROGRAMS = hello_test request_test netutils_test \
-                 buffer_test
+                 buffer_test selector_test
 
 hello_test_SOURCES = hello_test.c hello.c hello.h buffer.c buffer.h
 hello_test_CFLAGS  = @CHECK_CFLAGS@ 
@@ -26,6 +29,10 @@ netutils_test_LDADD   = @CHECK_LIBS@
 buffer_test_SOURCES = buffer_test.c buffer.h
 buffer_test_CFLAGS  = @CHECK_CFLAGS@
 buffer_test_LDADD   = @CHECK_LIBS@
+
+selector_test_SOURCES = selector_test.c selector.h 
+selector_test_CFLAGS  = @CHECK_CFLAGS@
+selector_test_LDADD   = @CHECK_LIBS@
 
 
 # si se utilizó converage lo limpiamos

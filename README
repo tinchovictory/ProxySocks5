@@ -44,6 +44,8 @@ hello.c    - parser del primer mensaje del protocolo SOCKSv5. Implementado con
 request.c  - parser del segundo mensaje del protocolo SOCKSv5. Implementado de 
              forma más tradicional (completa una estructura).
 netutils.c - utilidades varias relacionadas a sockets
+selector.c - selector.c - un muliplexor de entrada salida.
+
 
 Los parsers no realizan llamadas de sistema ni alocaciones.
 
