@@ -8,7 +8,8 @@ socksv5_SOURCES = main.c \
 		  buffer.h buffer.c \
                   selector.h selector.c \
                   stm.h stm.c \
-                  socks5.h socks5.c
+                  socks5.h socks5.c \
+                  socks5nio.h socks5nio.c
 
 TESTS = hello_test request_test netutils_test \
         buffer_test selector_test stm_test

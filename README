@@ -1,6 +1,6 @@
 
 Servidor SOCKSv5 que muestra la implementación de un servidor concurrente en 
-C utilizando pthreads.
+C utilizando sockets no bloqueantes y pthreads.
 
 La implementación no requiere autenticación y únicamente implementa
 la el comando CONNECT.
@@ -47,6 +47,7 @@ netutils.c - utilidades varias relacionadas a sockets
 selector.c - selector.c - un muliplexor de entrada salida.
 stm.c      - pequeño motor de maquina de estados donde los eventos son los
              del selector.c
+socks5nio.c- controla el flujo de un proxy SOCKSv5 (sockets no bloqueantes)             
 
 Los parsers no realizan llamadas de sistema ni alocaciones.
 
