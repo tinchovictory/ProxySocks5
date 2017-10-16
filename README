@@ -5,8 +5,8 @@ C utilizando sockets no bloqueantes y pthreads.
 La implementación no requiere autenticación y únicamente implementa
 la el comando CONNECT.
 
-Construcción:
-------------
+Construcción con Autotools:
+--------------------------
 
 La construcción está basada en Autotools 
 <https://www.gnu.org/software/automake/manual/html_node/index.html>.
@@ -23,9 +23,22 @@ Adicionalmente el usuario puede modificar fácilmente los flags de compilación.
 Por ejemplo si se busca medir la cobertura de las pruebas puede ejecutar:
    CFLAGS="-fprofile-arcs -ftest-coverage" ./configure
 
+Construcción con CMake:
+-----------------------
+
+Es posible construir el proyecto con <https://cmake.org/>.
+ $ mkdir build
+ $ cd build
+ $ cmake ../
+ $ make
+
+La construcción de CMake está preparado para que si se utiliza
+clang (CC=clang cmake ../) use clang-tidy para realizar análisis estático del
+código.
+
 Requerimientos:
 --------------
-  - autotools para la construcción
+  - autotools/cmake para la construcción
   - pthreads  para que sea un server iterativo
   - libcheck  <https://libcheck.github.io/check/> para el testing unitario
 

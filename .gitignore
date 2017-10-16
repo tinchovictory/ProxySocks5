@@ -40,4 +40,4 @@ src/*.log
 /src/*.lo
 /src/*.la
 /src/*test
-/tests/check_hello
+/build/*
