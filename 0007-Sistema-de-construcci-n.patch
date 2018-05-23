@@ -1,0 +1,255 @@
+From be8e56a978e2605d0f0a11dd7f28e8121bd1327e Mon Sep 17 00:00:00 2001
+From: "Juan F. Codagnone" <juan@leak.com.ar>
+Date: Thu, 15 Mar 2018 13:03:33 -0300
+Subject: [PATCH 07/11] =?UTF-8?q?Sistema=20de=20construcci=C3=B3n?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .gitignore      | 43 ++++++++++++++++++++++++++++++++++++
+ Makefile.am     |  2 ++
+ README          | 67 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ autogen.sh      |  5 +++++
+ configure.ac    | 41 +++++++++++++++++++++++++++++++++++
+ src/Makefile.am | 35 ++++++++++++++++++++++++++++++
+ 6 files changed, 193 insertions(+)
+ create mode 100644 .gitignore
+ create mode 100644 Makefile.am
+ create mode 100644 README
+ create mode 100755 autogen.sh
+ create mode 100644 configure.ac
+ create mode 100644 src/Makefile.am
+
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..801feae
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,43 @@
++.deps
++.gdb_history
++.libs/
++Makefile
++Makefile.in
++*~
++src/socksv5
++src/*.o
++src/*.gcno
++src/*.gcda
++src/*.log
++src/*.trs
++src/*.log
++/autom4te.cache
++/autoscan.log
++/autoscan-*.log
++/aclocal.m4
++/compile
++/config.guess
++/config.h.in
++/config.sub
++/config.log
++/configure
++/configure.scan
++/depcomp
++/install-sh
++/missing
++/stamp-h1
++/config.status
++/config.h
++/ar-lib
++/libtool
++/ltmain.sh
++/test-driver
++/.autotools
++/.cproject
++/.project
++/.settings/
++/src/.libs/
++/src/*.lo
++/src/*.la
++/src/*test
++/tests/check_hello
+diff --git a/Makefile.am b/Makefile.am
+new file mode 100644
+index 0000000..6864396
+--- /dev/null
++++ b/Makefile.am
+@@ -0,0 +1,2 @@
++SUBDIRS = src 
++dist_doc_DATA = README
+diff --git a/README b/README
+new file mode 100644
+index 0000000..2579909
+--- /dev/null
++++ b/README
+@@ -0,0 +1,67 @@
++
++Servidor SOCKSv5 que muestra la implementación de un servidor concurrente en 
++C utilizando pthreads.
++
++La implementación no requiere autenticación y únicamente implementa
++la el comando CONNECT.
++
++Construcción:
++------------
++
++La construcción está basada en Autotools 
++<https://www.gnu.org/software/automake/manual/html_node/index.html>.
++
++Para iniciar el sistema de construcción debe ejecutarse el script `autogen.sh'.
++Este scripts leerá archivos como `configure.ac' y generará al script 
++`configure', que a su vez generará los Makefiles.
++
++`configure' permite al usuario ubicar las librerías necesarias en caso de que
++no encuentren en un lugar estándar. Puede verificar su modo de uso ejecutando
++`./configure --help'.
++
++Adicionalmente el usuario puede modificar fácilmente los flags de compilación.
++Por ejemplo si se busca medir la cobertura de las pruebas puede ejecutar:
++   CFLAGS="-fprofile-arcs -ftest-coverage" ./configure
++
++Requerimientos:
++--------------
++  - autotools para la construcción
++  - pthreads  para que sea un server iterativo
++  - libcheck  <https://libcheck.github.io/check/> para el testing unitario
++
++Organización:
++------------
++
++Los archivos se encuentran escritos en el dialecto C99, y por defecto la 
++construcción es bastante estricta (-Wall -pedantic -pedantic-errors).
++
++main.c     - programa principal. lee argumentos e implementa el clásico
++             servidor TCP concurrente (con threads).
++socks5.c   - maneja todas las interacciones del protocolo SOCKSv5. Llamado 
++             desde main.c
++hello.c    - parser del primer mensaje del protocolo SOCKSv5. Implementado con
++             funciones callback.
++request.c  - parser del segundo mensaje del protocolo SOCKSv5. Implementado de 
++             forma más tradicional (completa una estructura).
++netutils.c - utilidades varias relacionadas a sockets
++
++Los parsers no realizan llamadas de sistema ni alocaciones.
++
++En todo el programa, la única alocación de memoria heap se realiza al entrar
++una nueva conexión, para pasar los argumentos al nuevo hilo.
++
++Algunos de los archivos contienen pruebas de unidad.
++
++Si un archivo se llama `foo.c' su suite de pruebas estará en el archivo 
++`foo_test.c', que generará el binario ejecutable `foo_test'. Cada suite
++contiene uno o más pruebas. Por defecto las pruebas se realizan en paralelo
++utilizando fork (ya que es mas seguro de esta forma de que una prueba no 
++interfiera con otra). Para que corran en el mismo proceso
++y sea sencillo la depuración se recomienda setear la variable de entorno CK_FORK
++con el valor `no'. Por ejemplo:
++    CK_FORK=no gdb ./hello_test
++
++El target `make check' construye todos las pruebas y los ejecutar dejando logs
++de los mismos.
++
++
+diff --git a/autogen.sh b/autogen.sh
+new file mode 100755
+index 0000000..73b144c
+--- /dev/null
++++ b/autogen.sh
+@@ -0,0 +1,5 @@
++#!/bin/sh
++
++autoreconf --install --force || exit 1
++
++echo "Now run ./configure, make, and make install."
+diff --git a/configure.ac b/configure.ac
+new file mode 100644
+index 0000000..3a9407a
+--- /dev/null
++++ b/configure.ac
+@@ -0,0 +1,41 @@
++AC_INIT([socksv5], [0.0.1], [jcodagno@itba.edu.ar])
++AM_INIT_AUTOMAKE([-Wall -Werror foreign])
++
++# se declara lo mas arriba posible para que los chequeos 
++# lo usen. En particular --std es lo que importa
++CFLAGS="-g --std=c11 -pedantic -pedantic-errors -Wall -Wextra -Werror -Wno-unused-parameter -Wno-implicit-fallthrough -D_POSIX_C_SOURCE=200112L $CFLAGS"
++
++# Checks for programs.
++AC_PROG_CC
++AM_PROG_AR
++#AC_PROG_LIBTOOL
++
++# Checks for header files.
++AC_HEADER_ASSERT
++AC_HEADER_STDC
++
++# Checks for typedefs, structures, and compiler characteristics.
++#AC_C_CONST
++#AC_TYPE_SIZE_T
++
++# Checks for library functions.
++#AC_FUNC_FORK
++#AC_FUNC_MALLOC
++#AC_FUNC_REALLOC
++#AC_TYPE_SIGNAL
++#AC_FUNC_STRTOD
++#AC_FUNC_VPRINTF
++AC_CHECK_FUNCS([gethostbyname memset socket connect inet_ntoa])
++AC_SEARCH_LIBS([pthread_create], [pthread], [
++  CFLAGS="-pthread ${CFLAGS}"
++  LDFLAGS="-pthread ${LDFLAGS}"
++ ], [AC_MSG_ERROR([unable to find pthread])])
++PKG_CHECK_MODULES([CHECK], [check >= 0.9.4])
++
++AC_CONFIG_HEADERS([config.h])
++
++AC_CONFIG_FILES([
++ Makefile
++ src/Makefile
++])
++AC_OUTPUT
+diff --git a/src/Makefile.am b/src/Makefile.am
+new file mode 100644
+index 0000000..3eef9cc
+--- /dev/null
++++ b/src/Makefile.am
+@@ -0,0 +1,35 @@
++bin_PROGRAMS    = socksv5 hello_test request_test netutils_test
++socksv5_SOURCES = main.c \
++                  hello.h hello.c \
++		  request.h request.c \
++                  netutils.h netutils.c \
++		  buffer.h buffer.c \
++                  socks5.h socks5.c
++
++TESTS = hello_test request_test netutils_test \
++        buffer_test
++check_PROGRAMS = hello_test request_test netutils_test \
++                 buffer_test
++
++hello_test_SOURCES = hello_test.c hello.c hello.h buffer.c buffer.h
++hello_test_CFLAGS  = @CHECK_CFLAGS@ 
++hello_test_LDADD   = @CHECK_LIBS@
++
++request_test_SOURCES = request_test.c request.c request.h buffer.c buffer.h
++request_test_CFLAGS  = @CHECK_CFLAGS@
++request_test_LDADD   = @CHECK_LIBS@
++
++netutils_test_SOURCES = netutils_test.c netutils.h netutils.c buffer.c buffer.h
++netutils_test_CFLAGS  = @CHECK_CFLAGS@
++netutils_test_LDADD   = @CHECK_LIBS@
++
++buffer_test_SOURCES = buffer_test.c buffer.h
++buffer_test_CFLAGS  = @CHECK_CFLAGS@
++buffer_test_LDADD   = @CHECK_LIBS@
++
++
++# si se utilizó converage lo limpiamos
++# https://gcc.gnu.org/onlinedocs/gcc-7.1.0/gcc/Gcov-Data-Files.html
++clean-local:
++	rm -f *.gcno *.gcda
++
+-- 
+2.14.3
+

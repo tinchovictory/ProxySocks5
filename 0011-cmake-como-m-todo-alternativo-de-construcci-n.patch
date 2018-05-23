@@ -1,0 +1,244 @@
+From 4449ab28543621ada8c685ce87ddae7a62a57e5e Mon Sep 17 00:00:00 2001
+From: "Juan F. Codagnone" <juan@leak.com.ar>
+Date: Mon, 16 Oct 2017 02:22:13 -0300
+Subject: [PATCH 11/11] =?UTF-8?q?cmake=20como=20m=C3=A9todo=20alternativo?=
+ =?UTF-8?q?=20de=20construcci=C3=B3n?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .gitignore         |  2 +-
+ CMakeLists.txt     | 48 +++++++++++++++++++++++++++++++++++++++++++++
+ FindCheck.cmake    | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ README             | 19 +++++++++++++++---
+ build/.keep        |  0
+ src/CMakeLists.txt | 44 +++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 166 insertions(+), 4 deletions(-)
+ create mode 100644 CMakeLists.txt
+ create mode 100644 FindCheck.cmake
+ create mode 100644 build/.keep
+ create mode 100644 src/CMakeLists.txt
+
+diff --git a/.gitignore b/.gitignore
+index 801feae..670fa15 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -40,4 +40,4 @@ src/*.log
+ /src/*.lo
+ /src/*.la
+ /src/*test
+-/tests/check_hello
++/build/*
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+new file mode 100644
+index 0000000..14b1fcf
+--- /dev/null
++++ b/CMakeLists.txt
+@@ -0,0 +1,48 @@
++project(socks C)
++
++cmake_minimum_required(VERSION 2.8)
++set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
++
++set(CMAKE_BUILD_TYPE Debug)
++#set(CMAKE_C_STANDARD 99)
++
++set(CMAKE_C_FLAGS    "--std=c99 -pedantic -pedantic-errors -Wall -Wextra -Werror -Wno-unused-parameter -Wno-implicit-fallthrough -D_POSIX_C_SOURCE=200112L ")
++
++include(FindCheck.cmake)
++include(CTest)
++#include(CheckCSourceCompiles)
++#include(CheckCSourceRuns)
++#include(CheckFunctionExists)
++#include(CheckIncludeFile)
++#include(CheckIncludeFiles)
++#include(CheckLibraryExists)
++#include(CheckSymbolExists)
++#include(CheckTypeSize)
++
++set(CLANG_TIDY_CHECKS *
++   -boost-*
++   -mpi-*
++   -llvm-*
++   -cppcoreguidelines-*
++   -clang-analyzer-osx.*
++   -cert-*-cpp
++   -misc-unused-parameters,
++   -clang-diagnostic-missing-declarations)
++string(REPLACE ";" "," CLANG_TIDY_CHECKS "${CLANG_TIDY_CHECKS}")
++
++if(CMAKE_C_COMPILER_ID MATCHES "Clang")
++    find_program(CLANGTIDY NAMES clang-tidy)
++    if(CLANGTIDY)
++      message(STATUS "Found clang-tidy: ${CLANGTIDY}")
++      set(CMAKE_C_CLANG_TIDY clang-tidy
++                       -checks=${CLANG_TIDY_CHECKS}
++                       -warnings-as-errors=*
++                       -fix)
++    endif()
++endif()
++set(CMAKE_C_FLAGS, "${CMAKE_C_FLAGS} -pedantic -pedantic-errors -Wall -Wextra 
++-Werror -Wno-unused-parameter -D_POSIX_C_SOURCE=200112L")
++
++add_subdirectory(src)
++
++
+diff --git a/FindCheck.cmake b/FindCheck.cmake
+new file mode 100644
+index 0000000..4392d88
+--- /dev/null
++++ b/FindCheck.cmake
+@@ -0,0 +1,57 @@
++# - Try to find the CHECK libraries
++#  Once done this will define
++#
++#  CHECK_FOUND - system has check
++#  CHECK_INCLUDE_DIR - the check include directory
++#  CHECK_LIBRARIES - check library
++#
++#  This configuration file for finding libcheck is originally from
++#  the opensync project. The originally was downloaded from here:
++#  opensync.org/browser/branches/3rd-party-cmake-modules/modules/FindCheck.cmake
++#
++#  Copyright (c) 2007 Daniel Gollub <dgollub@suse.de>
++#  Copyright (c) 2007 Bjoern Ricks  <b.ricks@fh-osnabrueck.de>
++#
++#  Redistribution and use is allowed according to the terms of the New
++#  BSD license.
++#  For details see the accompanying COPYING-CMAKE-SCRIPTS file.
++
++
++INCLUDE( FindPkgConfig )
++
++# Take care about check.pc settings
++PKG_SEARCH_MODULE( CHECK check )
++
++# Look for CHECK include dir and libraries
++IF( NOT CHECK_FOUND )
++	IF ( CHECK_INSTALL_DIR )
++		MESSAGE ( STATUS "Using override CHECK_INSTALL_DIR to find check" )
++		SET ( CHECK_INCLUDE_DIR  "${CHECK_INSTALL_DIR}/include" )
++		SET ( CHECK_INCLUDE_DIRS "${CHECK_INCLUDE_DIR}" )
++		FIND_LIBRARY( CHECK_LIBRARY NAMES check PATHS "${CHECK_INSTALL_DIR}/lib" )
++		FIND_LIBRARY( COMPAT_LIBRARY NAMES compat PATHS "${CHECK_INSTALL_DIR}/lib" )
++		SET ( CHECK_LIBRARIES "${CHECK_LIBRARY}" "${COMPAT_LIBRARY}" )
++	ELSE ( CHECK_INSTALL_DIR )
++		FIND_PATH( CHECK_INCLUDE_DIR check.h )
++		FIND_LIBRARY( CHECK_LIBRARIES NAMES check )
++	ENDIF ( CHECK_INSTALL_DIR )
++
++	IF ( CHECK_INCLUDE_DIR AND CHECK_LIBRARIES )
++		SET( CHECK_FOUND 1 )
++		IF ( NOT Check_FIND_QUIETLY )
++			MESSAGE ( STATUS "Found CHECK: ${CHECK_LIBRARIES}" )
++		ENDIF ( NOT Check_FIND_QUIETLY )
++	ELSE ( CHECK_INCLUDE_DIR AND CHECK_LIBRARIES )
++		IF ( Check_FIND_REQUIRED )
++			MESSAGE( FATAL_ERROR "Could NOT find CHECK" )
++		ELSE ( Check_FIND_REQUIRED )
++			IF ( NOT Check_FIND_QUIETLY )
++				MESSAGE( STATUS "Could NOT find CHECK" )	
++			ENDIF ( NOT Check_FIND_QUIETLY )
++		ENDIF ( Check_FIND_REQUIRED )
++	ENDIF ( CHECK_INCLUDE_DIR AND CHECK_LIBRARIES )
++ENDIF( NOT CHECK_FOUND )
++
++# Hide advanced variables from CMake GUIs
++MARK_AS_ADVANCED( CHECK_INCLUDE_DIR CHECK_LIBRARIES )
++
+diff --git a/README b/README
+index a6263bb..722125e 100644
+--- a/README
++++ b/README
+@@ -5,8 +5,8 @@ C utilizando sockets no bloqueantes y pthreads.
+ La implementación no requiere autenticación y únicamente implementa
+ la el comando CONNECT.
+ 
+-Construcción:
+-------------
++Construcción con Autotools:
++--------------------------
+ 
+ La construcción está basada en Autotools 
+ <https://www.gnu.org/software/automake/manual/html_node/index.html>.
+@@ -23,9 +23,22 @@ Adicionalmente el usuario puede modificar fácilmente los flags de compilación.
+ Por ejemplo si se busca medir la cobertura de las pruebas puede ejecutar:
+    CFLAGS="-fprofile-arcs -ftest-coverage" ./configure
+ 
++Construcción con CMake:
++-----------------------
++
++Es posible construir el proyecto con <https://cmake.org/>.
++ $ mkdir build
++ $ cd build
++ $ cmake ../
++ $ make
++
++La construcción de CMake está preparado para que si se utiliza
++clang (CC=clang cmake ../) use clang-tidy para realizar análisis estático del
++código.
++
+ Requerimientos:
+ --------------
+-  - autotools para la construcción
++  - autotools/cmake para la construcción
+   - pthreads  para que sea un server iterativo
+   - libcheck  <https://libcheck.github.io/check/> para el testing unitario
+ 
+diff --git a/build/.keep b/build/.keep
+new file mode 100644
+index 0000000..e69de29
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+new file mode 100644
+index 0000000..ecafa84
+--- /dev/null
++++ b/src/CMakeLists.txt
+@@ -0,0 +1,44 @@
++cmake_minimum_required(VERSION 2.8)
++
++add_executable(socksv5 main.c
++                       hello.c
++                       request.c
++                       netutils.c
++                       buffer.c
++                       selector.c
++                       stm.c
++                       socks5.c
++                       socks5nio.c)
++target_link_libraries(socksv5 pthread)
++
++if(CHECK_FOUND)
++    add_executable(hello_test 
++                   hello_test.c hello.c buffer.c)
++    target_link_libraries(hello_test check)
++    add_test(NAME hello_test COMMAND hello_test)
++
++    add_executable(request_test
++                   request_test.c request.c buffer.c)
++    add_test      (NAME request_test COMMAND request_test)
++    target_link_libraries(request_test check)
++
++    add_executable(netutils_test
++                   netutils_test.c netutils.c buffer.c)
++    add_test      (NAME netutils_test COMMAND netutils_test)
++    target_link_libraries(netutils_test check)
++
++    add_executable(buffer_test 
++                   buffer_test.c)
++    add_test      (NAME buffer_test COMMAND buffer_test)
++    target_link_libraries(buffer_test check)
++
++    add_executable(selector_test 
++                   selector_test.c)
++    add_test      (NAME selector_test COMMAND selector_test)
++    target_link_libraries(selector_test check pthread)
++
++    add_executable(stm_test 
++                   stm_test.c stm.c)
++    add_test      (NAME stm_test COMMAND stm_test)
++    target_link_libraries(stm_test check)
++endif()
+-- 
+2.14.3
+
